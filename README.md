@@ -27,27 +27,20 @@ Este proyecto abarca un ecosistema políglota para demostrar versatilidad y mejo
 
 ---
 
-## 🏛️ Arquitectura y Diseño de Dominio (DDD)
+## 🏛️ Arquitectura de Software
 
-El sistema está diseñado bajo los principios de **Domain-Driven Design (DDD)** y **Arquitectura Hexagonal**, separando estrictamente la lógica de negocio de la infraestructura.
+El backend está construido siguiendo los principios de **Domain-Driven Design (DDD)**, **Arquitectura Hexagonal (Ports & Adapters)** y **Clean Architecture**, empaquetados en un **Monolito Modular**.
 
-### Contextos Delimitados (Bounded Contexts)
-1.  **Marketplace (Descubrimiento):** API pública para búsqueda de salones y paquetes.
-2.  **Gestión Operativa (Back-office):** Panel para administradores (calendarios, contratos).
-3.  **Red de Socios:** Portal de postulación y gestión para proveedores.
-4.  **Identidad:** Autenticación y control de accesos basado en roles (RBAC).
+### ¿Por qué un Monolito Modular?
+En lugar de microservicios prematuros, usamos un monolito dividido en módulos estrictos. Esto nos da:
+1. **Alta cohesión:** Cada Bounded Context (Salones, Reservas, Contratos) vive en su propia carpeta.
+2. **Bajo acoplamiento:** Las dependencias apuntan hacia el dominio. La infraestructura depende de la aplicación, no al revés.
+3. **Facilidad de extracción:** Si un módulo crece demasiado, puede convertirse en un microservicio sin reescribir su lógica.
 
-### Agregados Principales del Dominio
-*   **Venue (Salón):** Entidad raíz con ubicación, capacidad y paquetes (`Package`).
-*   **Booking (Reserva):** Manejo de disponibilidad mediante `TimeSlots` (mañana, tarde, noche) y bloqueos distribuidos para evitar el *Double Booking*.
-*   **Contract (Contrato):** Generación dinámica con `Clauses` (cláusulas) reutilizables y firmas inmutables.
-*   **Partner (Socio):** Proveedores externos validados por el administrador del salón.
-
-### Decisiones Arquitectónicas Clave (ADRs)
-Todas las decisiones técnicas importantes se documentan en `docs/adr/`. Algunas de las más críticas son:
-*   **Go + PostgreSQL + Redis:** Para garantizar transacciones ACID y bloqueos distribuidos (evitar doble reserva).
-*   **Arquitectura Hexagonal:** Para mantener la lógica de negocio pura y altamente testeable.
-*   **Auditoría Inmutable (Outbox Pattern):** Para trazabilidad legal de contratos y cláusulas.
+### Estructura de Capas (Regla de Dependencia)
+*   **Domain (Dominio):** Entidades, Objetos de Valor, Reglas de Negocio e Interfaces (Puertos). No tiene dependencias externas (ni frameworks, ni bases de datos).
+*   **Application (Aplicación):** Casos de uso. Orquesta el flujo entre el dominio y los adaptadores.
+*   **Infrastructure (Infraestructura):** Adaptadores de entrada (HTTP/REST) y salida (PostgreSQL, Redis). Implementan las interfaces del dominio.
 
 ---
 
@@ -82,7 +75,12 @@ devops-laboratory/
 ├── .github/
 │   └── workflows/         # Pipelines de CI/CD (ci-go.yml, ci-react.yml, etc.)
 ├── services/
-│   └── venues-api/        # Servicio Backend en Go (Core Domain)
+│   └── venues-api/        # Servicio Backend en Go (Monolito Modular)
+│       ├── cmd/           # Puntos de entrada
+│       ├── internal/      # Código privado
+│       │   ├── domain/    # Entidades, Value Objects y Puertos
+│       │   ├── application/ # Casos de Uso
+│       │   └── infrastructure/ # Adaptadores (HTTP, DB)
 ├── apps/
 │   ├── web-admin/         # Frontend React (Back-office)
 │   └── mobile-kmp/        # App Kotlin Multiplatform (Cliente final)
